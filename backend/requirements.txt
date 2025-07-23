@@ -3,3 +3,4 @@ pinecone-client==4.1.1
 python-dotenv==1.0.1
 fastapi==0.111.0
 uvicorn[standard]==0.30.1
+langchain-google-genai

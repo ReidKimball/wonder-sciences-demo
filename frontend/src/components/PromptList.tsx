@@ -3,10 +3,11 @@
 import React, { useState, useEffect } from 'react';
 
 interface PromptListProps {
-  onSelectPrompt: (prompt: string) => void;
+  selectedPrompt: string | null;
+  onSelectPrompt: (promptName: string) => void;
 }
 
-const PromptList: React.FC<PromptListProps> = ({ onSelectPrompt }) => {
+const PromptList: React.FC<PromptListProps> = ({ selectedPrompt, onSelectPrompt }) => {
   const [prompts, setPrompts] = useState<string[]>([]);
 
   useEffect(() => {
@@ -24,15 +25,15 @@ const PromptList: React.FC<PromptListProps> = ({ onSelectPrompt }) => {
   }, []);
 
   return (
-    <div className="w-1/4 bg-gray-100 p-4">
+    <div className="w-1/4 bg-gray-100 p-4 overflow-y-auto">
       <h2 className="text-lg font-bold mb-4 text-black">System Prompts</h2>
       <ul>
         {prompts.map((prompt) => (
-          <li
-            key={prompt}
-            className="p-2 hover:bg-gray-200 cursor-pointer text-black"
-            onClick={() => onSelectPrompt(prompt)}
-          >
+          <li key={prompt} 
+              className={`p-2 rounded-lg cursor-pointer mb-2 text-black ${
+                selectedPrompt === prompt ? 'bg-blue-500 text-white' : 'bg-white'
+              }`}
+              onClick={() => onSelectPrompt(prompt)}>
             {prompt}
           </li>
         ))}
