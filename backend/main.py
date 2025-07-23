@@ -3,6 +3,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Dict
+import re
 
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -75,7 +76,18 @@ async def chat(request: ChatRequest):
         messages.append(HumanMessage(content=request.user_message))
 
         response = llm.invoke(messages)
-        return {"reply": response.content}
+        full_response_content = response.content
+
+        # Extract analysis and clean the reply
+        analysis_content = ""
+        user_reply = full_response_content
+
+        analysis_match = re.search(r'<AI_ANALYSIS>(.*?)</AI_ANALYSIS>', full_response_content, re.DOTALL)
+        if analysis_match:
+            analysis_content = analysis_match.group(1).strip()
+            user_reply = re.sub(r'<AI_ANALYSIS>.*?</AI_ANALYSIS>', '', user_reply, flags=re.DOTALL).strip()
+
+        return {"reply": user_reply, "analysis": analysis_content}
 
     except Exception as e:
         print(f"Error during chat processing: {e}")

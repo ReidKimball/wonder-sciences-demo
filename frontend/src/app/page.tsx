@@ -14,10 +14,12 @@ export default function Home() {
   const [selectedPrompt, setSelectedPrompt] = useState<string | null>(null);
   const [promptContent, setPromptContent] = useState<string>('');
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+  const [aiAnalysis, setAiAnalysis] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleNewChatSession = () => {
     setChatHistory([]);
+    setAiAnalysis([]);
   };
 
   const handleSendMessage = async (message: string) => {
@@ -51,6 +53,9 @@ export default function Home() {
       const data = await response.json();
       const aiMessage: ChatMessage = { role: 'assistant', content: data.reply };
       setChatHistory([...updatedHistory, aiMessage]);
+      if (data.analysis) {
+        setAiAnalysis(prev => [...prev, data.analysis]);
+      }
 
     } catch (error) {
       console.error('Error sending message:', error);
@@ -64,7 +69,11 @@ export default function Home() {
   return (
     <main className="flex h-screen bg-gray-200">
       <PromptList selectedPrompt={selectedPrompt} onSelectPrompt={setSelectedPrompt} />
-      <PromptDisplay selectedPrompt={selectedPrompt} onPromptContentLoaded={setPromptContent} />
+      <PromptDisplay 
+        selectedPrompt={selectedPrompt} 
+        onPromptContentLoaded={setPromptContent}
+        aiAnalysis={aiAnalysis}
+      />
       <Chat 
         chatHistory={chatHistory} 
         onSendMessage={handleSendMessage} 
