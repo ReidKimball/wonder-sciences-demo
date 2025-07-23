@@ -41,6 +41,7 @@ export default function Home() {
         },
         body: JSON.stringify({
           system_prompt: promptContent,
+          system_prompt_filename: selectedPrompt,
           history: chatHistory, // Send history before the new user message
           user_message: message,
         }),

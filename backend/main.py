@@ -34,6 +34,7 @@ class ChatMessage(BaseModel):
 
 class ChatRequest(BaseModel):
     system_prompt: str
+    system_prompt_filename: str
     history: List[ChatMessage]
     user_message: str
 
@@ -66,7 +67,13 @@ async def chat(request: ChatRequest):
 
         llm = ChatGoogleGenerativeAI(model=gemini_model, google_api_key=gemini_api_key)
 
-        messages = [SystemMessage(content=request.system_prompt)]
+        # Dynamically replace the placeholder with the actual filename
+        processed_system_prompt = request.system_prompt.replace(
+            "{{SYSTEM_PROMPT_FILENAME}}", 
+            request.system_prompt_filename
+        )
+
+        messages = [SystemMessage(content=processed_system_prompt)]
         for msg in request.history:
             if msg.role == 'user':
                 messages.append(HumanMessage(content=msg.content))
