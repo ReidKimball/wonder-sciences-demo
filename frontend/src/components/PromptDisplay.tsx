@@ -64,17 +64,17 @@ const PromptDisplay: React.FC<PromptDisplayProps> = ({ selectedPrompt, onPromptC
   };
 
   return (
-    <div className="w-1/2 bg-white p-4 flex flex-col h-full">
-      <h2 className="text-lg font-bold mb-4 text-black flex-shrink-0">
+    <div className="w-1/2 bg-white p-4 flex flex-col">
+      <h2 className="text-lg font-bold mb-4 text-black">
         {selectedPrompt ? `Selected Prompt: ${selectedPrompt}` : 'Selected Prompt'}
       </h2>
-      <div className="w-full p-4 bg-gray-100 rounded-lg overflow-y-auto mb-4 flex-grow">
+      <div className="w-full flex-grow p-4 bg-gray-100 rounded-lg overflow-y-auto">
         <p className="text-black whitespace-pre-wrap break-words">{content || 'Select a prompt from the list to see its content.'}</p>
       </div>
 
-      <div className="border rounded-lg overflow-hidden flex flex-col flex-grow">
-        <details className="p-4 flex flex-col overflow-hidden h-full" open>
-          <summary className="font-bold cursor-pointer text-black flex justify-between items-center mb-4 flex-shrink-0">
+      <div className="mt-4 border rounded-lg">
+        <details className="p-4">
+          <summary className="font-bold cursor-pointer text-black flex justify-between items-center">
             <span>AI Analysis</span>
             {aiAnalysis.length > 0 && (
               <button 
@@ -89,7 +89,7 @@ const PromptDisplay: React.FC<PromptDisplayProps> = ({ selectedPrompt, onPromptC
             )}
           </summary>
           <div 
-            className="prose max-w-none text-black overflow-y-auto flex-grow"
+            className="mt-4 prose max-w-none text-black max-h-96 overflow-y-auto"
             dangerouslySetInnerHTML={{ __html: analysisHtml }}
           />
           <div ref={analysisEndRef} />
