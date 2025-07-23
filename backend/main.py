@@ -78,14 +78,24 @@ async def chat(request: ChatRequest):
         response = llm.invoke(messages)
         full_response_content = response.content
 
+        print("--- Full AI Response ---")
+        print(full_response_content)
+        print("-------------------------")
+
         # Extract analysis and clean the reply
         analysis_content = ""
         user_reply = full_response_content
 
         analysis_match = re.search(r'<AI_ANALYSIS>(.*?)</AI_ANALYSIS>', full_response_content, re.DOTALL)
         if analysis_match:
+            print("Found <AI_ANALYSIS> tags.")
             analysis_content = analysis_match.group(1).strip()
             user_reply = re.sub(r'<AI_ANALYSIS>.*?</AI_ANALYSIS>', '', user_reply, flags=re.DOTALL).strip()
+        else:
+            print("Did not find <AI_ANALYSIS> tags.")
+
+        print(f"\n--- Extracted Analysis ---\n{analysis_content}")
+        print(f"\n--- Cleaned User Reply ---\n{user_reply}\n")
 
         return {"reply": user_reply, "analysis": analysis_content}
 
