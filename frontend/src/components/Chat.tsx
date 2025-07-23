@@ -11,9 +11,10 @@ interface ChatProps {
   chatHistory: ChatMessage[];
   onSendMessage: (message: string) => void;
   isLoading: boolean;
+  onNewChatSession: () => void;
 }
 
-const Chat: React.FC<ChatProps> = ({ chatHistory, onSendMessage, isLoading }) => {
+const Chat: React.FC<ChatProps> = ({ chatHistory, onSendMessage, isLoading, onNewChatSession }) => {
   const [input, setInput] = useState('');
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
@@ -38,7 +39,15 @@ const Chat: React.FC<ChatProps> = ({ chatHistory, onSendMessage, isLoading }) =>
 
   return (
     <div className="w-1/3 bg-white p-4 flex flex-col h-screen">
-      <h2 className="text-lg font-bold mb-4 text-black">Chat</h2>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-lg font-bold text-black">Chat</h2>
+        <button 
+          className="bg-gray-200 text-black text-sm py-1 px-3 rounded-lg hover:bg-gray-300"
+          onClick={onNewChatSession}
+        >
+          New Chat Session
+        </button>
+      </div>
       <div ref={chatContainerRef} className="flex-grow border rounded-lg p-4 mb-4 overflow-y-auto bg-gray-50">
         {chatHistory.map((msg, index) => (
           <div key={index} className={`mb-3 p-3 rounded-lg max-w-xs break-words ${

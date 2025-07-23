@@ -16,6 +16,10 @@ export default function Home() {
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
+  const handleNewChatSession = () => {
+    setChatHistory([]);
+  };
+
   const handleSendMessage = async (message: string) => {
     if (!selectedPrompt || !promptContent) {
       alert('Please select a system prompt first.');
@@ -61,7 +65,12 @@ export default function Home() {
     <main className="flex h-screen bg-gray-200">
       <PromptList selectedPrompt={selectedPrompt} onSelectPrompt={setSelectedPrompt} />
       <PromptDisplay selectedPrompt={selectedPrompt} onPromptContentLoaded={setPromptContent} />
-      <Chat chatHistory={chatHistory} onSendMessage={handleSendMessage} isLoading={isLoading} />
+      <Chat 
+        chatHistory={chatHistory} 
+        onSendMessage={handleSendMessage} 
+        isLoading={isLoading} 
+        onNewChatSession={handleNewChatSession} 
+      />
     </main>
   );
 }
