@@ -26,6 +26,7 @@ interface PromptListProps {
  */
 const PromptList: React.FC<PromptListProps> = ({ selectedPrompt, onSelectPrompt }) => {
   const [prompts, setPrompts] = useState<string[]>([]); // State to store the list of prompt filenames.
+  const [isLoading, setIsLoading] = useState(true); // State to track loading status.
 
   /**
    * @effect
@@ -39,6 +40,8 @@ const PromptList: React.FC<PromptListProps> = ({ selectedPrompt, onSelectPrompt 
         setPrompts(data);
       } catch (error) {
         console.error('Error fetching prompts:', error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -48,17 +51,25 @@ const PromptList: React.FC<PromptListProps> = ({ selectedPrompt, onSelectPrompt 
   return (
     <div className="w-1/4 bg-gray-100 p-4 overflow-y-auto">
       <h2 className="text-lg font-bold mb-4 text-black">System Prompts</h2>
-      <ul>
-        {prompts.map((prompt) => (
-          <li key={prompt} 
+      {isLoading ? (
+        <div className="flex justify-center items-center pt-10">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        </div>
+      ) : (
+        <ul>
+          {prompts.map((prompt) => (
+            <li
+              key={prompt}
               className={`p-2 rounded-lg cursor-pointer mb-2 text-black ${
                 selectedPrompt === prompt ? 'bg-blue-500 text-white' : 'bg-white'
               }`}
-              onClick={() => onSelectPrompt(prompt)}>
-            {prompt}
-          </li>
-        ))}
-      </ul>
+              onClick={() => onSelectPrompt(prompt)}
+            >
+              {prompt}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 };
