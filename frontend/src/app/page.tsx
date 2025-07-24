@@ -1,3 +1,10 @@
+/**
+ * @file page.tsx
+ * @description This is the main page of the Wonder Sciences AI Demo application.
+ * It orchestrates the main components: PromptList, PromptDisplay, and Chat,
+ * and manages the application's core state.
+ */
+
 'use client';
 
 import React, { useState } from 'react';
@@ -5,23 +12,43 @@ import PromptList from '@/components/PromptList';
 import PromptDisplay from '@/components/PromptDisplay';
 import Chat from '@/components/Chat';
 
+/**
+ * @interface ChatMessage
+ * @description Defines the structure for a single chat message object.
+ */
 interface ChatMessage {
+  /** The role of the message sender, either 'user' or 'assistant'. */
   role: 'user' | 'assistant';
+  /** The text content of the message. */
   content: string;
 }
 
+/**
+ * The main component for the home page.
+ * @returns {JSX.Element} The rendered home page.
+ */
 export default function Home() {
-  const [selectedPrompt, setSelectedPrompt] = useState<string | null>(null);
-  const [promptContent, setPromptContent] = useState<string>('');
-  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
-  const [aiAnalysis, setAiAnalysis] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  // --- State Management ---
+  const [selectedPrompt, setSelectedPrompt] = useState<string | null>(null); // Tracks the filename of the currently selected system prompt.
+  const [promptContent, setPromptContent] = useState<string>(''); // Holds the actual content of the selected prompt.
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]); // Stores the history of the current chat session.
+  const [aiAnalysis, setAiAnalysis] = useState<string[]>([]); // Accumulates AI analysis strings from chat responses.
+  const [isLoading, setIsLoading] = useState(false); // Tracks the loading state for the chat response.
 
+  /**
+   * @function handleNewChatSession
+   * @description Resets the chat history and AI analysis to start a new session.
+   */
   const handleNewChatSession = () => {
     setChatHistory([]);
     setAiAnalysis([]);
   };
 
+  /**
+   * @function handleSendMessage
+   * @description Handles sending a new message to the backend API and updating the chat state.
+   * @param {string} message - The message content from the user.
+   */
   const handleSendMessage = async (message: string) => {
     if (!selectedPrompt || !promptContent) {
       alert('Please select a system prompt first.');
@@ -34,6 +61,7 @@ export default function Home() {
     setIsLoading(true);
 
     try {
+      // Fetch response from the backend chat API
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/chat`, {
         method: 'POST',
         headers: {
@@ -54,6 +82,8 @@ export default function Home() {
       const data = await response.json();
       const aiMessage: ChatMessage = { role: 'assistant', content: data.reply };
       setChatHistory([...updatedHistory, aiMessage]);
+      
+      // If the response contains an analysis, add it to the state
       if (data.analysis) {
         setAiAnalysis(prev => [...prev, data.analysis]);
       }
