@@ -31,6 +31,7 @@ export default function Home() {
   // --- State Management ---
   const [selectedPrompt, setSelectedPrompt] = useState<string | null>(null); // Tracks the filename of the currently selected system prompt.
   const [promptContent, setPromptContent] = useState<string>(''); // Holds the actual content of the selected prompt.
+  const [selectedModel, setSelectedModel] = useState<string>('gemini-2.5-pro'); // Tracks the selected AI model.
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]); // Stores the history of the current chat session.
   const [aiAnalysis, setAiAnalysis] = useState<string[]>([]); // Accumulates AI analysis strings from chat responses.
   const [isLoading, setIsLoading] = useState(false); // Tracks the loading state for the chat response.
@@ -72,6 +73,7 @@ export default function Home() {
           system_prompt_filename: selectedPrompt,
           history: chatHistory, // Send history before the new user message
           user_message: message,
+          model_name: selectedModel, // Pass the selected model to the backend
         }),
       });
 
@@ -99,7 +101,12 @@ export default function Home() {
 
   return (
     <main className="flex h-screen bg-gray-200">
-      <PromptList selectedPrompt={selectedPrompt} onSelectPrompt={setSelectedPrompt} />
+      <PromptList 
+        selectedPrompt={selectedPrompt} 
+        onSelectPrompt={setSelectedPrompt} 
+        selectedModel={selectedModel}
+        onSelectModel={setSelectedModel}
+      />
       <PromptDisplay 
         selectedPrompt={selectedPrompt} 
         onPromptContentLoaded={setPromptContent}

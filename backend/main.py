@@ -11,7 +11,7 @@ import os
 from fastapi import FastAPI, HTTPException  # Core FastAPI framework and exception handling
 from fastapi.middleware.cors import CORSMiddleware  # Middleware for handling Cross-Origin Resource Sharing
 from pydantic import BaseModel, Field  # For data validation and settings management
-from typing import List, Dict  # Python's standard typing library
+from typing import List, Dict, Optional  # Python's standard typing library
 import re  # Regular expression library for parsing AI responses
 
 # Third-Party Libraries
@@ -60,36 +60,24 @@ class ChatMessage(BaseModel):
     content: str = Field(..., description="The text content of the message.")
 
 class ChatRequest(BaseModel):
-    """Represents the request body for the /api/chat endpoint.
-
-    Attributes:
-        system_prompt (str): The template for the system prompt.
-        system_prompt_filename (str): The filename of the selected system prompt.
-        history (List[ChatMessage]): The list of previous messages in the conversation.
-        user_message (str): The new message from the user.
-    """
-    system_prompt: str = Field(..., description="The system prompt template.")
+    """Request model for the chat endpoint."""
+    system_prompt: str = Field(..., description="The system prompt to guide the AI's behavior.")
     system_prompt_filename: str = Field(..., description="The filename of the system prompt being used.")
-    history: List[ChatMessage] = Field(..., description="A list of previous chat messages.")
-    user_message: str = Field(..., description="The new message from the user.")
+    history: List[ChatMessage] = Field(..., description="The chat history between the user and the assistant.")
+    user_message: str = Field(..., description="The user's latest message.")
+    model_name: Optional[str] = Field(default=None, description="The specific Gemini model to use for the chat.")
+
+class ChatResponse(BaseModel):
+    """Response model for the chat endpoint."""
+    reply: str = Field(..., description="The AI's response to the user's message.")
+    analysis: str = Field(..., description="The AI's internal analysis of the conversation.")
 
 # --- API Endpoints ---
 
-@app.get("/api/prompts", summary="Get Available Prompts")
+@app.get("/api/prompts", summary="Get Available Prompts", tags=["Prompts"])
 async def get_prompts():
-    """Retrieves a list of available system prompt filenames.
-
-    Reads the `PROMPTS_DIR` and returns a list of all files that match the
-    pattern 'sys_prompt_v*.md'.
-
-    Returns:
-        List[str]: A list of available prompt filenames.
-    """
-    prompts = []
-    for filename in os.listdir(PROMPTS_DIR):
-        if filename.startswith("sys_prompt_v") and filename.endswith(".md"):
-            prompts.append(filename)
-    return prompts
+    """Returns a list of available system prompt files from the `ai_prompts` directory."""
+    return [f for f in os.listdir(PROMPTS_DIR) if f.endswith('.md')]
 
 @app.get("/api/prompts/{prompt_name}", summary="Get Prompt Content")
 def get_prompt_content(prompt_name: str):
@@ -109,85 +97,72 @@ def get_prompt_content(prompt_name: str):
         return {"content": content}
     raise HTTPException(status_code=404, detail="File not found")
 
-@app.post("/api/chat", summary="Process a Chat Message")
+@app.get("/api/models", tags=["Models"])
+async def get_models():
+    """Returns a list of available Gemini models."""
+    # In a real-world scenario, this could be read from a config file
+    # or an environment variable, but is hardcoded here for simplicity.
+    available_models = [
+        "gemini-2.5-pro",
+        "gemini-2.5-flash",
+        "gemini-2.5-flash-lite",
+    ]
+    return {"models": available_models}
+
+@app.post("/api/chat", response_model=ChatResponse, description="Handles the chat interaction.", tags=["Chat"])
 async def chat(request: ChatRequest):
-    """Processes a user's chat message and returns the AI's response.
-
-    This endpoint takes the current chat history and a new user message,
-    constructs a conversation chain, sends it to the Google Generative AI model,
-    and parses the response to separate the user-facing reply from the internal
-    AI analysis.
-
-    Args:
-        request (ChatRequest): The request body containing the chat history,
-                               system prompt, and new user message.
-
-    Raises:
-        HTTPException: If the required API keys are not configured or if an
-                       error occurs during AI model invocation.
-
-    Returns:
-        dict: A dictionary containing the AI's `reply` and internal `analysis`.
     """
-    try:
-        # --- Environment Variable and LLM Initialization ---
-        gemini_api_key = os.getenv("GEMINI_API_KEY")
-        gemini_model = os.getenv("GEMINI_MODEL")
-        if not gemini_api_key:
-            raise HTTPException(status_code=500, detail="GEMINI_API_KEY not found in .env file")
-        if not gemini_model:
-            raise HTTPException(status_code=500, detail="GEMINI_MODEL not found in .env file")
+    Receives a chat request, communicates with the Gemini API, and returns the AI's response.
 
-        llm = ChatGoogleGenerativeAI(model=gemini_model, google_api_key=gemini_api_key)
+    This endpoint orchestrates the conversation by:
+    1.  Constructing a message history from the request.
+    2.  Selecting the appropriate Gemini model (either from the request or the environment variable).
+    3.  Invoking the model with the chat history and system prompt.
+    4.  Parsing the response to separate the user-facing reply from the private analysis.
+    5.  Returning the reply and analysis to the frontend.
+    """
+    # Use the model from the request, or fall back to the environment variable
+    model_name = request.model_name or os.getenv("GEMINI_MODEL", "gemini-2.5-pro")
 
-        # --- Message Construction ---
-        # Dynamically replace the placeholder with the actual filename
-        processed_system_prompt = request.system_prompt.replace(
-            "{{SYSTEM_PROMPT_FILENAME}}", 
-            request.system_prompt_filename
-        )
+    # Initialize the ChatGoogleGenerativeAI model
+    llm = ChatGoogleGenerativeAI(model=model_name, google_api_key=os.getenv("GEMINI_API_KEY"))
 
-        # Construct the list of messages for the LLM
-        messages = [SystemMessage(content=processed_system_prompt)]
-        for msg in request.history:
-            if msg.role == 'user':
-                messages.append(HumanMessage(content=msg.content))
-            elif msg.role == 'assistant':
-                messages.append(AIMessage(content=msg.content))
-        
-        messages.append(HumanMessage(content=request.user_message))
+    # Construct the message history for the model
+    messages = [SystemMessage(content=request.system_prompt)]
+    for msg in request.history:
+        if msg.role == 'user':
+            messages.append(HumanMessage(content=msg.content))
+        elif msg.role == 'assistant':
+            messages.append(AIMessage(content=msg.content))
+    
+    messages.append(HumanMessage(content=request.user_message))
 
-        # --- LLM Invocation ---
-        response = llm.invoke(messages)
-        full_response_content = response.content
+    # --- LLM Invocation ---
+    response = llm.invoke(messages)
+    full_response_content = response.content
 
-        # For debugging purposes, print the full raw response from the AI
-        print("--- Full AI Response ---")
-        print(full_response_content)
-        print("-------------------------")
+    # For debugging purposes, print the full raw response from the AI
+    print("--- Full AI Response ---")
+    print(full_response_content)
+    print("-------------------------")
 
-        # --- Response Parsing ---
-        # Extract the AI's internal analysis and the user-facing reply
-        analysis_content = ""
-        user_reply = full_response_content
+    # --- Response Parsing ---
+    # Extract the AI's internal analysis and the user-facing reply
+    analysis_content = ""
+    user_reply = full_response_content
 
-        # Use regex to find and extract content within <AI_ANALYSIS> tags
-        analysis_match = re.search(r'<AI_ANALYSIS>(.*?)</AI_ANALYSIS>', full_response_content, re.DOTALL)
-        if analysis_match:
-            print("Found <AI_ANALYSIS> tags.")
-            analysis_content = analysis_match.group(1).strip()
-            # Remove the analysis part from the user-facing reply
-            user_reply = re.sub(r'<AI_ANALYSIS>.*?</AI_ANALYSIS>', '', user_reply, flags=re.DOTALL).strip()
-        else:
-            print("Did not find <AI_ANALYSIS> tags.")
+    # Use regex to find and extract content within <AI_ANALYSIS> tags
+    analysis_match = re.search(r'<AI_ANALYSIS>(.*?)</AI_ANALYSIS>', full_response_content, re.DOTALL)
+    if analysis_match:
+        print("Found <AI_ANALYSIS> tags.")
+        analysis_content = analysis_match.group(1).strip()
+        # Remove the analysis part from the user-facing reply
+        user_reply = re.sub(r'<AI_ANALYSIS>.*?</AI_ANALYSIS>', '', user_reply, flags=re.DOTALL).strip()
+    else:
+        print("Did not find <AI_ANALYSIS> tags.")
 
-        # For debugging purposes, print the parsed components
-        print(f"\n--- Extracted Analysis ---\n{analysis_content}")
-        print(f"\n--- Cleaned User Reply ---\n{user_reply}\n")
+    # For debugging purposes, print the parsed components
+    print(f"\n--- Extracted Analysis ---\n{analysis_content}")
+    print(f"\n--- Cleaned User Reply ---\n{user_reply}\n")
 
-        return {"reply": user_reply, "analysis": analysis_content}
-
-    except Exception as e:
-        # Log the exception and return a generic server error
-        print(f"Error during chat processing: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    return {"reply": user_reply, "analysis": analysis_content}
