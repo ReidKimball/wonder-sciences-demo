@@ -24,7 +24,7 @@ const PromptDisplay: React.FC<PromptDisplayProps> = ({ selectedPrompt, onPromptC
     if (selectedPrompt) {
       const fetchPromptContent = async () => {
         try {
-          const response = await fetch(`http://localhost:8000/api/prompts/${selectedPrompt}`);
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/prompts/${selectedPrompt}`);
           const data = await response.json();
           setContent(data.content);
           onPromptContentLoaded(data.content);

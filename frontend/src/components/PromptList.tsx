@@ -13,7 +13,7 @@ const PromptList: React.FC<PromptListProps> = ({ selectedPrompt, onSelectPrompt 
   useEffect(() => {
     const fetchPrompts = async () => {
       try {
-        const response = await fetch('http://localhost:8000/api/prompts');
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/prompts`);
         const data = await response.json();
         setPrompts(data);
       } catch (error) {

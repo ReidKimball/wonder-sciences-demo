@@ -16,6 +16,7 @@ app = FastAPI()
 # Configure CORS
 origins = [
     "http://localhost:3000",  # The address of the React frontend
+    "https://wsdemo-app-165871915889.us-central1.run.app",  # The address of the React frontend
 ]
 
 app.add_middleware(
