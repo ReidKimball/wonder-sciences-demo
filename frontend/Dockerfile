@@ -5,6 +5,7 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Accept a build-time argument for the API URL
+# --build-arg NEXT_PUBLIC_API_URL=https://wsdemo-backend-165871915889.us-central1.run.app
 ARG NEXT_PUBLIC_API_URL
 # Set it as an environment variable for the build process
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL

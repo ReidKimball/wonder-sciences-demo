@@ -7,6 +7,8 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { marked } from 'marked'; // For rendering Markdown content
+import DOMPurify from 'dompurify'; // For sanitizing HTML to prevent XSS attacks
 
 /**
  * @interface ChatMessage
@@ -88,12 +90,18 @@ const Chat: React.FC<ChatProps> = ({ chatHistory, onSendMessage, isLoading, onNe
       </div>
       <div ref={chatContainerRef} className="flex-grow border rounded-lg p-4 mb-4 overflow-y-auto bg-gray-50">
         {chatHistory.map((msg, index) => (
-          <div key={index} className={`mb-3 p-3 rounded-lg max-w-xs break-words ${
+          <div key={index} className={`mb-3 p-3 rounded-lg max-w-full break-words prose prose-sm ${ // Use max-w-full for better wrapping and prose for styling
             msg.role === 'user' 
               ? 'bg-blue-500 text-white ml-auto'
               : 'bg-gray-300 text-black mr-auto'
           }`}>
-            <p className="text-sm">{msg.content}</p>
+            {msg.role === 'user' ? (
+              <p className="text-sm">{msg.content}</p>
+            ) : (
+              <div 
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(marked(msg.content.replace(/\n/g, '<br />')) as string) }} 
+              />
+            )}
           </div>
         ))}
         {/* Display a thinking indicator when waiting for a response */}
